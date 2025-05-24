@@ -40,21 +40,17 @@ class LoginViewModel @Inject constructor(
 
     fun login() {
         loginState.value = LoginState.LOGGING_IN
+
         viewModelScope.launch {
-            val request = LoginRequest(
-                username = username.state.value,
-                password = password.state.value
-            )
+            // Simulate a short delay (optional)
+            kotlinx.coroutines.delay(1000)
 
-            val response = cardiacZoneRepository.login(request)
-
-            Logger.w("LOGIN RESPONSE: $response")
-
-            loginState.value = response?.patient?.patientId?.let { id ->
-                _userId.postValue(Event(id))
-                userPreferences.saveUserId(id)
-                LoginState.LOGIN_SUCCESSFUL
-            } ?: LoginState.LOGGED_OUT
+            // Fake a user ID and mark login as successful
+            val fakeUserId = "123456789"  // or any ID longer than 8 characters
+            _userId.postValue(Event(fakeUserId))
+            userPreferences.saveUserId(fakeUserId)
+            loginState.value = LoginState.LOGIN_SUCCESSFUL
         }
     }
+
 }

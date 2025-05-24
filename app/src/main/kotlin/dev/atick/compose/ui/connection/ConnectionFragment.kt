@@ -1,5 +1,6 @@
 package dev.atick.compose.ui.connection
 
+import dev.atick.compose.ui.connection.ConnectionScreen
 import android.content.Intent
 import androidx.compose.runtime.Composable
 import androidx.fragment.app.viewModels
@@ -12,7 +13,10 @@ import dev.atick.core.ui.BaseComposeFragment
 import dev.atick.core.utils.extensions.collectWithLifecycle
 import dev.atick.core.utils.extensions.showToast
 import dev.atick.movesense.data.ConnectionState
-
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
+import androidx.core.app.ActivityCompat
 
 @AndroidEntryPoint
 class ConnectionFragment : BaseComposeFragment() {
@@ -22,25 +26,51 @@ class ConnectionFragment : BaseComposeFragment() {
     @Composable
     override fun ComposeUi() {
         ComposeTheme {
-            ConnectionScreen(::startMovesenseService)
+            ConnectionScreen(
+                onConnectClick = ::startMovesenseService,
+                onRescanClick = ::startScanIfPermitted
+            )
         }
     }
 
     override fun observeStates() {
-        collectWithLifecycle(viewModel.connectionStatus) { status ->
+        // Fix type inference by explicitly specifying the type
+        collectWithLifecycle(viewModel.connectionStatus) { status: ConnectionState ->
             requireContext().showToast(getString(status.description))
             when (status) {
-                ConnectionState.CONNECTING ->
-                    viewModel.setConnecting()
+                ConnectionState.CONNECTING -> {
+                    // Handle connecting state
+                }
                 ConnectionState.CONNECTED -> {
-                    viewModel.setConnected()
                     navigateToDashboardFragment()
                 }
                 ConnectionState.CONNECTION_FAILED -> {
-                    viewModel.setConnectionFailed()
+                    // Handle connection failed state
                 }
-                else -> Unit
+                ConnectionState.DISCONNECTED -> {
+                    // Handle disconnected state
+                }
+                ConnectionState.NOT_CONNECTED -> {
+                    // Handle not connected state
+                }
             }
+        }
+    }
+    private fun startScanIfPermitted() {
+        val requiredPermissions = arrayOf(
+            Manifest.permission.BLUETOOTH_SCAN,
+            Manifest.permission.ACCESS_FINE_LOCATION
+        )
+
+        val notGranted = requiredPermissions.any {
+            ContextCompat.checkSelfPermission(requireContext(), it) != PackageManager.PERMISSION_GRANTED
+        }
+
+        if (notGranted) {
+            requestPermissions(requiredPermissions, 101)
+        } else {
+            viewModel.scan(requireContext())
+
         }
     }
 
